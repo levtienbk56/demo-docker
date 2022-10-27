@@ -76,8 +76,50 @@ exit;
 ```
 
 on host EC2, let check container's IP, then connect to mysql. Try `show database;` to show all databases, then `exit;` (remember comma at the end of mysql command)
-```sh
+```
+docker container inspect mysqlserver1
 sudo apt-get update
 sudp apt-install mysql-client-core-8.0
 mysql -h 172.17.0.2 -u root -p
 ```
+
+
+## Run Node api server
+
+clone code from [here](https://gitlab.com/levtienbk56/nodejsmysql.git) into **$HOME/nodejsmysql** folder on host EC2.
+use image  **node:14** to run a container that mount **$HOME/nodejsmysql** to **/home/app**, also map port `80:3000`
+```
+docker run -it -p 80:3000 -v $HOME/nodejsmysql:/home/app --name apiserver1 node:14 /bin/bash
+```
+
+edit parameters in file **server.js**:
+```vim
+process.env.DB_HOST = '172.17.0.2';
+process.env.DB_USER = 'root';
+process.env.DB_PASS = '123456';
+```
+then run node server
+```sh
+npm install
+node server.js
+```
+or define that parameter direct in run command
+```
+DB_HOST=172.17.0.2 DB_USER=root DB_PASS=123456 node server.js
+```
+
+check log of node server like this
+```
+Conneting to MYSQL IP= 172.17.0.2 USER=root PASS=123456
+Node app is running on port 3000
+MYSQL Connected!
+ DB userapidb OK
+ Select userapidb OK
+DB Ready. App is running... 
+```
+
+access public IP of host EC2 [http://{public_ip_of_EC2}/users](http://{public_ip_of_EC2}/users)
+```json
+{"error":false,"data":[{"id":1,"name":"Max","email":"max@gmail.com","created_at":"2020-03-18T23:20:20.000Z"},{"id":2,"name":"John","email":"john@gmail.com","created_at":"2020-03-18T23:45:20.000Z"},{"id":3,"name":"David","email":"david@gmail.com","created_at":"2020-03-18T23:30:20.000Z"},{"id":4,"name":"James","email":"james@gmail.com","created_at":"2020-03-18T23:10:20.000Z"},{"id":5,"name":"Shaw","email":"shaw@gmail.com","created_at":"2020-03-18T23:15:20.000Z"},
+```
+
