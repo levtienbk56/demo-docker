@@ -162,6 +162,11 @@ docker images
 ```
 then run a container (require run Mysqlserver at [day2] first)
 ```
+docker run -d -p 3000:3000 mynodeapi /bin/bash
+docker ps -a
+```
+container was be exited, cause of `/bin/bash` added to run command which override CMD `node server.js` in Dockerfile.
+```
 docker run -d -p 3000:3000 mynodeapi
 docker ps -a
 ```
