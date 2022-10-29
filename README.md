@@ -1,6 +1,6 @@
 # demo-docker
 
-## install Docker on EC2
+## [day1] Install Docker on EC2
 
 prepare an Ubuntu EC2.
 ```sh
@@ -53,7 +53,7 @@ newgrp docker  //for changing group take effect
 ```
 
 
-## RUn Mysql Docker
+## [day2] Run Mysql Docker
 
 create new volume for mysql on host EC2
 ```sh
@@ -62,7 +62,7 @@ docker volume ls
 ```
 run a container that mount to above volume
 ```sh
-docker run -d --mount volume=sqlvolume,target=/var/lib/mysql --name mysqlserver1 -e MYSQL_ROOT_PASSWORD=a123456 -e MYSQL_ROOT_HOST=% mysql
+docker run -d --mount source=sqlvolume,target=/var/lib/mysql --name mysqlserver1 -e MYSQL_ROOT_PASSWORD=a123456 -e MYSQL_ROOT_HOST=% mysql
 ```
 
 connect to that container, then run mysql
@@ -84,7 +84,7 @@ mysql -h 172.17.0.2 -u root -p
 ```
 
 
-## Run Node api server
+## [day3] Run Node api server
 
 clone code from [here](https://gitlab.com/levtienbk56/nodejsmysql.git) into **$HOME/nodejsmysql** folder on host EC2.
 use image  **node:14** to run a container that mount **$HOME/nodejsmysql** to **/home/app**, also map port `80:3000`
@@ -123,3 +123,46 @@ access public IP of host EC2 [http://{public_ip_of_EC2}/users](http://{public_ip
 {"error":false,"data":[{"id":1,"name":"Max","email":"max@gmail.com","created_at":"2020-03-18T23:20:20.000Z"},{"id":2,"name":"John","email":"john@gmail.com","created_at":"2020-03-18T23:45:20.000Z"},{"id":3,"name":"David","email":"david@gmail.com","created_at":"2020-03-18T23:30:20.000Z"},{"id":4,"name":"James","email":"james@gmail.com","created_at":"2020-03-18T23:10:20.000Z"},{"id":5,"name":"Shaw","email":"shaw@gmail.com","created_at":"2020-03-18T23:15:20.000Z"},
 ```
 
+
+
+## [day4] Dockerfile
+Dockerfile is a script which contains a series of commands or instructions, to build the images.
+the common of commands:
+- **FROM**:  tells us what image to base this off of
+- **COPY**:  It can copy a file (in the same directory as the Dockerfile) to the container
+- **ARG**: This sets the environment variables, which can be used in the Dockerfile, only available during the build of a Docker image
+- **ENV**:  This sets the environment variables, which can be used in the Dockerfile and any scripts that it calls. These are persistent with the container too, so they can be referenced at any time
+- **VOLUME**: Specifying volume in the Dockerfile allows it to be externally mounted via the host itself or a Docker data container. If it’s not defined here, then it’s not possible to access outside of the container.
+- **RUN**: this is what runs within the image at build time
+- **CMD**: this is what runs within the container at build time
+- **ENTRYPOINT**: same as CMD, which runs within container build time. if the **ENTRYPOINT** isn't specified, Docker will use /bin/sh -c as default. However, if you watnt to override some of the system defaults, you can specify your own entrypoint and therefore manipulate the environment. The ENTRYPOINT command also allows arguments to be set from the Docker run command as well, whereas CMD can’t.
+- **USER**: create an user then login with this user when run container
+
+[reference link](https://www.cloudbees.com/blog/what-is-a-dockerfile)
+
+let use folder which has code from [day3] **$HOME/nodejsmysql**.
+look over Dockerfile
+```
+FROM node:14
+
+RUN apt-get update
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+EXPOSE 3000
+CMD [ "node", "server.js" ]
+```
+
+let create docker image by command. (last . mean finding Dockerfile in current folder)
+```
+docker build -t mynodeapi .
+docker images
+```
+then run a container (require run Mysqlserver at [day2] first)
+```
+docker run -d -p 3000:3000 mynodeapi
+docker ps -a
+```
+access to [http://EC2_PUBLIC_IP:3000/users](http://EC2_PUBLIC_IP:3000/users) to confirm nodeapi server working
