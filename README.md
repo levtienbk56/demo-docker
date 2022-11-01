@@ -185,8 +185,11 @@ let do 3 examples:
 create new 2 folders, for each service
 ```
 UsersService
+├── mysql
+│   ├── docker-compose.yml     // for example 1.
 ├── apiusers
-└── mysql
+│   └── docker-compose.yml     // for example 2.
+├── docker-compose.yml         // for example 3.
 ```
 install docker-compose tool
 ```sh
@@ -308,3 +311,50 @@ docker-compose up -d
 then access to [http://EC2_PUBLIC_IP:3000/](http://EC2_PUBLIC_IP:3000/) to confirm change.
 
 
+### 3. Create both 2 containers Mysql and Node API at once
+edit file **UsersService/docker-compose.yml**
+```yml
+version: '3.5'
+volumes:
+  sqlvolume:
+    external: true
+
+services:
+  mysql-server:
+    image: mysql
+    container_name: mysql-db-dev
+    restart: always
+    volumes:
+      - sqlvolume:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=userapidb
+      - MYSQL_ROOT_HOST=%
+    ports:
+      - "3306:3306"
+    networks:
+      - bridge500
+    healthcheck:
+      test: "/etc/init.d/mysql status"
+      interval: 1s
+      retries: 120
+
+  webapi:
+    build: ./apiusers
+    container_name: nodejs-api-dev
+    restart: always
+    environment:
+      - DB_HOST=172.31.0.2
+      - DB_USER=root
+      - DB_PASS=123456
+    ports:
+      - "3000:3000"
+    networks:
+      - bridge500
+    depends_on:
+      - mysql-server  
+
+networks:
+  bridge500:
+    external: true
+```
